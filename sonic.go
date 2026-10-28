@@ -25,6 +25,7 @@ import (
 
 	"github.com/bytedance/sonic/decoder"
 	"github.com/bytedance/sonic/encoder"
+	"github.com/bytedance/sonic/internal/resolver"
 	"github.com/bytedance/sonic/internal/rt"
 	"github.com/bytedance/sonic/option"
 )
@@ -151,6 +152,14 @@ func (cfg frozenConfig) NewDecoder(reader io.Reader) Decoder {
 func (cfg frozenConfig) Valid(data []byte) bool {
 	ok, _ := encoder.Valid(data)
 	return ok
+}
+
+// SetOmitEmptyNonPointer makes the encoder treat every non-pointer struct field as `omitempty`,
+// whether or not the tag says so. Pointer fields are untouched: nil stays null, and a pointer to
+// a zero value is still encoded. Call it from init(), before the first Marshal: the compiled
+// encoder of each type is cached, so types encoded earlier keep the old behaviour.
+func SetOmitEmptyNonPointer(enabled bool) {
+	resolver.OmitEmptyNonPointer = enabled
 }
 
 // Pretouch compiles vt ahead-of-time to avoid JIT compilation on-the-fly, in

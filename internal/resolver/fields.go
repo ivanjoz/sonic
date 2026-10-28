@@ -26,6 +26,11 @@ import (
 	"github.com/bytedance/sonic/internal/encoder/alg"
 )
 
+// OmitEmptyNonPointer makes every non-pointer field behave as if it carried the `omitempty` tag.
+// Pointer fields keep the standard rules: nil is encoded as null, a pointer to a zero value as that value.
+// It must be set before the first encode, because the compiled encoder of each type is cached.
+var OmitEmptyNonPointer bool
+
 type StdField struct {
 	name        string
 	nameBytes   []byte
@@ -133,7 +138,7 @@ func typeFields(t reflect.Type) StdStructFields {
 						tag:       tagged,
 						index:     index,
 						typ:       ft,
-						omitEmpty: opts.Contains("omitempty"),
+						omitEmpty: opts.Contains("omitempty") || (OmitEmptyNonPointer && sf.Type.Kind() != reflect.Pointer),
 						omitZero:  opts.Contains("omitzero"),
 						quoted:    quoted,
 					}
