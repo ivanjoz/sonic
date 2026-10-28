@@ -154,12 +154,12 @@ func (cfg frozenConfig) Valid(data []byte) bool {
 	return ok
 }
 
-// SetOmitEmptyNonPointer makes the encoder treat every non-pointer struct field as `omitempty`,
-// whether or not the tag says so. Pointer fields are untouched: nil stays null, and a pointer to
-// a zero value is still encoded. Call it from init(), before the first Marshal: the compiled
-// encoder of each type is cached, so types encoded earlier keep the old behaviour.
-func SetOmitEmptyNonPointer(enabled bool) {
-	resolver.OmitEmptyNonPointer = enabled
+// SetOmitEmptyDefault makes the encoder treat every struct field as `omitempty`, whether or not the tag
+// says so, except pointers to numbers (*int.., *uint.., *float..): nil stays null there and a pointer to 0
+// is still encoded. Call it from init(), before the first Marshal: the compiled encoder of each type is
+// cached, so types encoded earlier keep the old behaviour.
+func SetOmitEmptyDefault(enabled bool) {
+	resolver.OmitEmptyDefault = enabled
 }
 
 // Pretouch compiles vt ahead-of-time to avoid JIT compilation on-the-fly, in

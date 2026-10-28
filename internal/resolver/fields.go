@@ -26,10 +26,26 @@ import (
 	"github.com/bytedance/sonic/internal/encoder/alg"
 )
 
-// OmitEmptyNonPointer makes every non-pointer field behave as if it carried the `omitempty` tag.
-// Pointer fields keep the standard rules: nil is encoded as null, a pointer to a zero value as that value.
+// OmitEmptyDefault makes every field behave as if it carried the `omitempty` tag, except a pointer to a
+// number (*int8..*int64, *uint8..*uint64, *float32, *float64): there nil stays null and a pointer to 0 stays 0,
+// so those are the fields that can tell "no value" from zero. A pointer to anything else (string, bool, slice,
+// map, struct) is omitted when nil.
 // It must be set before the first encode, because the compiled encoder of each type is cached.
-var OmitEmptyNonPointer bool
+var OmitEmptyDefault bool
+
+// isPointerToNumber reports a field type that OmitEmptyDefault leaves alone.
+func isPointerToNumber(fieldType reflect.Type) bool {
+	if fieldType.Kind() != reflect.Pointer {
+		return false
+	}
+	switch fieldType.Elem().Kind() {
+	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64,
+		reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64, reflect.Uintptr,
+		reflect.Float32, reflect.Float64:
+		return true
+	}
+	return false
+}
 
 type StdField struct {
 	name        string
@@ -138,7 +154,7 @@ func typeFields(t reflect.Type) StdStructFields {
 						tag:       tagged,
 						index:     index,
 						typ:       ft,
-						omitEmpty: opts.Contains("omitempty") || (OmitEmptyNonPointer && sf.Type.Kind() != reflect.Pointer),
+						omitEmpty: opts.Contains("omitempty") || (OmitEmptyDefault && !isPointerToNumber(sf.Type)),
 						omitZero:  opts.Contains("omitzero"),
 						quoted:    quoted,
 					}
